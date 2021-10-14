@@ -25,6 +25,8 @@ Rules credit: https://replit.com/@rlmoser/rubyMastermind#README.md
     The guess had 1 correct number in the correct location [1] and 2 correct numbers in a wrong location [3,4].
     
     Options:
-    You can play as code maker or as code breaker, if you choose to play as code maker, you will be asked to create a code and the computer will try to crack it (Takes an average of 5 turns to crack)
+    You can play as code maker or as code breaker, if you choose to play as code maker,
+    you will be asked to create a code and the computer will try to crack it 
+    (Takes an average of 5 turns to crack)
 
     If you choose to be code breaker, the computer will generate a random code which you will have to try and crack.

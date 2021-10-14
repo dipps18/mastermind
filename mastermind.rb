@@ -19,14 +19,10 @@ module Display
     1341
     As you can see, there can be more then one of the same number/color.
     In order to win, the code breaker needs to guess the 'master code' in 12 or less turns.
-
-
     Clues:
     After each guess, there will be up to four clues to help crack the code.
-
     ● This clue means you have 1 correct number in the correct location.
     ○ This clue means you have 1 correct number, but in the wrong location.
-
     Clue Example:
     To continue the example, using the above 'master code' a guess of 1463 would produce 3 clues:
     1463  ● ○ ○ 
@@ -201,6 +197,12 @@ class CodeSetter
   attr_accessor :code
 end
 
-game = Game.new()
-game.play_game
+loop do
+  game = Game.new()
+  game.play_game
+  puts "Do you wish to play again ? (yes or no)"
+  ans = gets.chomp
+  break if ans == 'no'
+end
 
+puts "Thanks for playing"

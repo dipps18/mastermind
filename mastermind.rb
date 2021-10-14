@@ -1,75 +1,77 @@
-require 'pry'
+require 'colorize'
 module Display
   def display_welcome
     puts "Welcome to Mastermind\n"
     puts "Please select from one of the options below (1-3)\n"
     puts "1. Display Rules"
     puts "2. Choose to be Code Maker"
-    puts "3. Choose to be Code Breaker" 
+    puts "3. Choose to be Code Breaker"
   end
 
   def display_rules
-    puts "Rules credit: https://replit.com/@rlmoser/rubyMastermind#README.md\n
-    How to play Mastermind:\n
-    You can choose to be the code maker or the code breaker\n
-    This is a 1-player game against the computer.\n
-    There are six different number combinations:\n
-    The code maker will choose four to create a 'master code'. For example,\n
-    1341\n
-    As you can see, there can be more then one of the same number/color.\n
-    In order to win, the code breaker needs to guess the 'master code' in 12 or less turns.\n
+    puts "
+    Rules credit: https://replit.com/@rlmoser/rubyMastermind#README.md
+    How to play Mastermind:
+    You can choose to be the code maker or the code breaker
+    This is a 1-player game against the computer.
+    There are six different number combinations:
+    The code maker will choose four to create a 'master code'. For example,
+    1341
+    As you can see, there can be more then one of the same number/color.
+    In order to win, the code breaker needs to guess the 'master code' in 12 or less turns.
 
 
-    Clues:\n
-    After each guess, there will be up to four clues to help crack the code.\n
+    Clues:
+    After each guess, there will be up to four clues to help crack the code.
 
-    ● This clue means you have 1 correct number in the correct location.\n
-    ○ This clue means you have 1 correct number, but in the wrong location.\n
+    ● This clue means you have 1 correct number in the correct location.
+    ○ This clue means you have 1 correct number, but in the wrong location.
 
-    Clue Example:\n
-    To continue the example, using the above 'master code' a guess of 1463 would produce 3 clues:\n
-    1     4     6     3     Clues: ● ○ ○ \n
+    Clue Example:
+    To continue the example, using the above 'master code' a guess of 1463 would produce 3 clues:
+    1463  ● ○ ○ 
     The guess had 1 correct number in the correct location [1] and 2 correct numbers in a wrong location [3,4].\n"
   end
 
   def display_choice_error(choice)
-    puts "#{choice} is not a valid option"
+    puts "#{choice} is not a valid option\nPlease select again".red
   end
 
   def display_digit_error
-    puts "digits should range from 1-6"
+    puts "digits should range from 1-6\nPlease renter a new code".red
   end
 
   def display_code_generation_message
-    puts 'The computer has created a 4 digit code from with digits ranging from 1-6'
+    puts "\nThe computer has created a 4 digit code from with digits ranging from 1-6".green
   end
 
   def display_turns_left(turns)
-    puts "\n#{turns} turns left\n"
+    puts "\n#{turns} turns left"
   end
 
   def prompt_guess
-    puts "Enter your guess >> "
+    print "Enter your guess >> ".green
   end
 
   def prompt_code
-    puts "Enter your code >> "
+    print "\nEnter your code >> ".green
   end
 
   def display_correct_number_and_position(count)
-    count.times{print "● "}
+    count.times{print "● ".blue}
   end
 
   def display_correct_number(count)
     count.times{print "○ "}
+    print "\n"
   end
 
   def display_results(code, guess)
-    puts (code == guess) ? "Code breaker wins!" : "Code breaker loses, the code was #{code}"
+    puts (code == guess) ? "\nCode breaker wins!".green : "Code breaker loses, the code was #{code}".red
   end
 
   def display_computer_guess(guess)
-    puts "Computer guess: #{guess.join}"
+    print "Computer guess: #{guess.join}    "
   end
 
 end
@@ -108,8 +110,7 @@ class Game
     loop do
       display_turns_left(@turns)
       prompt_guess
-      player.guess = get_input
-      @turns -= 1
+      @turns -= 1 if player.guess = get_input
       cur_score = compare_codes(computer.code, player.guess)
       display_clues(cur_score[0], cur_score[1])
       break if gameover?(cur_score[0])
@@ -135,15 +136,14 @@ class Game
     computer.guess = initial_guess
     possible_sequences = [1, 2, 3, 4, 5, 6].repeated_permutation(4).to_a
     loop do 
-      @turns -= 1
+      display_turns_left(@turns)
       display_computer_guess(computer.guess)
+      @turns -= 1
       cur_score = compare_codes(player.code, computer.guess)
       display_clues(cur_score[0], cur_score[1])
       update_possible_sequences(possible_sequences, computer.guess, cur_score)
       break if computer.guess == player.code || @turns == 0
-      display_turns_left(@turns)
       computer.guess = possible_sequences.sample
-      puts "Number of possible outcomes: #{possible_sequences.length}"
     end  
     display_results(player.code, computer.guess)
   end

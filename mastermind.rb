@@ -32,7 +32,7 @@ module Display
     The guess had 1 correct number in the correct location [1] and 2 correct numbers in a wrong location [3,4].\n"
   end
 
-  def display_error(choice)
+  def display_choice_error(choice)
     puts "#{choice} is not a valid option"
   end
 
@@ -52,6 +52,10 @@ module Display
     puts "Enter your guess >> "
   end
 
+  def prompt_code
+    puts "Enter your code >> "
+  end
+
   def display_correct_number_and_position(count)
     count.times{print "● "}
   end
@@ -60,8 +64,12 @@ module Display
     count.times{print "○ "}
   end
 
-  def display_results(code)
-    puts @turns == 0 ? "You lose, the code was #{code}" : "You win!"
+  def display_results(code, guess)
+    puts (code == guess) ? "Code breaker wins!" : "Code breaker loses, the code was #{code}"
+  end
+
+  def display_computer_guess(guess)
+    puts "Computer guess: #{guess.join}"
   end
 
 end
@@ -98,65 +106,46 @@ class Game
     computer.code = generate_code
     display_code_generation_message
     loop do
-      break if gameover?(player)
-      player.correct_number_only = 0
-      player.correct_number_and_position = 0
       display_turns_left(@turns)
       prompt_guess
       player.guess = get_input
-      if invalid_input?(player.guess)
-        puts display_digit_error
-      else
-        @turns -= 1
-        compare_codes(computer, player)
-        display_clues(player.correct_number_and_position, player.correct_number_only)
-      end
+      @turns -= 1
+      cur_score = compare_codes(computer.code, player.guess)
+      display_clues(cur_score[0], cur_score[1])
+      break if gameover?(cur_score[0])
     end
-    display_results(computer.code)
+    display_results(computer.code, player.guess)
   end
 
-  def update_possible_sequences(possible_sequences, guess, exact_correct, correct_numbers)
-    indices = [0, 1, 2, 3].permutation(exact_correct).to_a # gives the permutation of the indices when 2 correct guesses are in correct position
-    must_contain = guess.permutation(exact_correct + correct_numbers).to_a
-    updated_possible_sequences=[]        
-    possible_sequences.each do |element|
-      if exact_correct > 0  
-        indices.each do |index|
-          if (must_contain.any?{|arr| (arr - element).empty?}) 
-            if (element[index[0]] == guess[index[0]] && exact_correct == 1) || (element[index[0]] == guess[index[0]] && element[index[1]] == guess[index[1]] && exact_correct == 2) || (element[index[0]] == guess[index[0]] && element[index[1]] == guess[index[1]] && element[index[2]] == guess[index[2]] && exact_correct == 3)
-              updated_possible_sequences.push(element)
-              break
-            end
-          end
-        end
-      else
-        updated_possible_sequences.push(element) if must_contain.any?{|arr| (arr - element).empty?} 
-      end
+  def update_possible_sequences(possible_sequences, guess, cur_score)
+    possible_sequences.delete_if do |code|
+      true if (compare_codes(guess, code) != cur_score)   
     end
-    updated_possible_sequences
+  end
+
+  def initial_guess
+    "1122".split("").map{|element| element.to_i}
   end
 
   def play_as_code_maker
     player = CodeSetter.new
     computer = CodeBreaker.new
-    puts "Input your code >> "
+    prompt_code
     player.code = get_input
-    computer.guess = "1122".split("").map{|element| element.to_i}
-    possible_sequences = [1, 2, 3, 4, 5, 6].repeated_permutation(4)
-    updated_seq = update_possible_sequences(possible_sequences, computer.guess, computer.correct_number_and_position, computer.correct_number_only)
+    computer.guess = initial_guess
+    possible_sequences = [1, 2, 3, 4, 5, 6].repeated_permutation(4).to_a
     loop do 
-      computer.correct_number_and_position = 0
-      computer.correct_number_only = 0
-      puts "Computer guess: #{computer.guess}"
-      compare_codes(player, computer)
-      display_clues(computer.correct_number_and_position, computer.correct_number_only)
-      updated_seq = update_possible_sequences(updated_seq, computer.guess, computer.correct_number_and_position, computer.correct_number_only)
-      break if computer.guess == player.code || @turns == 0
-      computer.guess = updated_seq.sample
-      puts updated_seq.length
       @turns -= 1
+      display_computer_guess(computer.guess)
+      cur_score = compare_codes(player.code, computer.guess)
+      display_clues(cur_score[0], cur_score[1])
+      update_possible_sequences(possible_sequences, computer.guess, cur_score)
+      break if computer.guess == player.code || @turns == 0
+      display_turns_left(@turns)
+      computer.guess = possible_sequences.sample
+      puts "Number of possible outcomes: #{possible_sequences.length}"
     end  
-    display_results(player.code)
+    display_results(player.code, computer.guess)
   end
 
   def generate_code
@@ -171,23 +160,31 @@ class Game
     guess.any?{|element| element < 1 || element > 6 || guess.length < 4 }
   end
 
-  def gameover?(player)
-    player.correct_number_and_position == 4 || @turns == 0 ? true : false
+  def gameover?(correct_number_and_position)
+    correct_number_and_position == 4 || @turns == 0 ? true : false
   end
 
   def get_input
-    gets.chomp.split("").map{|element| element.to_i}
+    input = 0
+    loop do
+      input = gets.chomp.split("").map{|element| element.to_i}
+      invalid_input?(input) ? display_digit_error : break
+    end
+    input
   end
 
-  def compare_codes(code_setter, code_breaker)
+  def compare_codes(code, guess)
     common_digits_count = 0
-    unique_code = code_setter.code.dup # this variable stores the value of unique code and removes identical elements at each iteration
+    correct_number_and_position = 0
+    correct_number_only = 0
+    unique_code = code.dup # this variable stores the value of unique code and removes identical elements at each iteration
     for i in 0..3
-      code_breaker.correct_number_and_position += 1 if code_setter.code[i] == code_breaker.guess[i]
-      unique_code.include?(code_breaker.guess[i]) ? common_digits_count += 1 : next
-      unique_code.delete_at(unique_code.index(code_breaker.guess[i]) || unique_code.length)
+      correct_number_and_position += 1 if code[i] == guess[i]
+      unique_code.include?(guess[i]) ? common_digits_count += 1 : next
+      unique_code.delete_at(unique_code.index(guess[i]) || unique_code.length)
     end
-    code_breaker.correct_number_only = common_digits_count - code_breaker.correct_number_and_position
+    correct_number_only = common_digits_count - correct_number_and_position
+    [correct_number_and_position, correct_number_only]
   end
 
   def display_clues(correct_number_and_position, correct_number_only)
@@ -197,11 +194,7 @@ class Game
 end
 
 class CodeBreaker
-  attr_accessor :guess, :correct_number_and_position, :correct_number_only
-  def initialize
-    @correct_number_and_position = 0
-    @correct_number_only = 0
-  end
+  attr_accessor :guess
 end
 
 class CodeSetter
